@@ -32,6 +32,15 @@ spec =
             , "git push --set-upstream testing master"
             ]
 
+makeApp :: IO Application
+makeApp = do
+    let dir = "/tmp/git-data/"
+    removePathForcibly dir
+    createDirectoryIfMissing True dir
+    callIn dir "git init --bare"
+    callIn dir "git config http.receivepack true"
+    pure $ cgiGitBackend dir
+
 callIn :: FilePath -> String -> IO ()
 callIn dir cmd = do
     let cp = (shell cmd) {cwd = Just dir}
@@ -40,10 +49,3 @@ callIn dir cmd = do
     case ec of
         ExitSuccess -> pure ()
         ExitFailure _ -> throwIO ec
-
-makeApp :: IO Application
-makeApp = do
-    let dir = "/tmp/git-data"
-    removePathForcibly dir
-    createDirectoryIfMissing True dir
-    pure cgiGitBackend

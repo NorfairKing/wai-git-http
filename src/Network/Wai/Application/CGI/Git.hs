@@ -31,11 +31,22 @@ import Network.Wai.Application.Classic.Conduit
 import Network.Wai.Application.Classic.Field (textPlainHeader)
 import Network.Wai.Application.Classic.Header (hStatus, hostPort)
 
-cgiGitBackend :: Application
-cgiGitBackend req respond = do
+-- | A git back-end
+--
+-- The git base dir is the directory for the git repository to serve.  This is
+-- `repository/` for bare repositories and `repository/.git/` for non-bare
+-- repositories. (Must end in a trailing path separator.)
+--
+-- WARNING: This does not set up any bare repositories, you still have to do
+-- that manually.
+--
+cgiGitBackend ::
+       FilePath -- ^ Git base dir
+    -> Application
+cgiGitBackend baseDir req respond = do
     case parseMethod $ requestMethod req of
-        Right GET -> cgiGitBackendApp False req respond
-        Right POST -> cgiGitBackendApp True req respond
+        Right GET -> cgiGitBackendApp baseDir False req respond
+        Right POST -> cgiGitBackendApp baseDir True req respond
         _ ->
             respond $
             responseLBS
@@ -43,10 +54,11 @@ cgiGitBackend req respond = do
                 textPlainHeader
                 "Method Not Allowed\r\n"
 
-cgiGitBackendApp :: Bool -> Application
-cgiGitBackendApp body req respond = bracket setup teardown (respond <=< cgi)
+cgiGitBackendApp :: FilePath -> Bool -> Application
+cgiGitBackendApp baseDir body req respond =
+    bracket setup teardown (respond <=< cgi)
   where
-    setup = execGitBackendProcess req
+    setup = execGitBackendProcess baseDir req
     teardown (rhdl, whdl, pid) = do
         terminateProcess pid -- SIGTERM
         hClose rhdl
@@ -56,8 +68,9 @@ cgiGitBackendApp body req respond = bracket setup teardown (respond <=< cgi)
         hClose whdl -- telling EOF
         fromCGI rhdl
 
-execGitBackendProcess :: Request -> IO (Handle, Handle, ProcessHandle)
-execGitBackendProcess req = do
+execGitBackendProcess ::
+       FilePath -> Request -> IO (Handle, Handle, ProcessHandle)
+execGitBackendProcess baseDir req = do
     let naddr = showSockAddr . remoteHost $ req
     epath <- lookupEnv "PATH"
     (Just whdl, Just rhdl, _, pid) <- createProcess $ proSpec naddr epath
@@ -72,6 +85,7 @@ execGitBackendProcess req = do
         , env =
               Just $
               makeEnv
+                  baseDir
                   req
                   naddr
                   "git http-backend"
@@ -92,22 +106,18 @@ execGitBackendProcess req = do
         }
 
 makeEnv ::
-       Request
+       FilePath
+    -> Request
     -> String
     -> String
     -> String
     -> ByteString
     -> Maybe String
     -> [(String, String)]
-makeEnv req naddr scriptName pathinfo sname epath =
+makeEnv baseDir req naddr scriptName pathinfo sname epath =
     addPath epath . addLen . addType . addCookie $ baseEnv
   where
-    tp =
-        case pathInfo req of
-            [] -> error "Should never happen." -- FIXME
-            (_:rest) ->
-                "/tmp/shared-wolf/accounts/379cf27b-84c1-44bd-a73f-1f4315f5be9c/data/.git/" ++
-                T.unpack (T.intercalate "/" rest)
+    tp = baseDir ++ T.unpack (T.intercalate "/" $ pathInfo req)
     baseEnv =
         [ ("GATEWAY_INTERFACE", gatewayInterface)
         , ("SCRIPT_NAME", scriptName)
