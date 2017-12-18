@@ -13,8 +13,7 @@ import Data.Conduit
 import qualified Data.Conduit.Binary as CB
 import qualified Data.Conduit.List as CL
 
-import Control.Exception (bracket, catch)
-import Control.Exception (SomeException(..))
+import Control.Exception (SomeException(..), bracket, catch)
 import Control.Monad
 
 import System.Environment (lookupEnv)
@@ -26,10 +25,8 @@ import Network.SockAddr (showSockAddr)
 import Network.Wai
 import Network.Wai.Conduit
 
-import Network.Wai.Application.Classic.Conduit
+import Network.Wai.Application.CGI.Git.Conduit
        (parseHeader, toResponseSource)
-import Network.Wai.Application.Classic.Field (textPlainHeader)
-import Network.Wai.Application.Classic.Header (hStatus, hostPort)
 
 -- | A git back-end
 --
@@ -37,13 +34,14 @@ import Network.Wai.Application.Classic.Header (hStatus, hostPort)
 -- `repository/` for bare repositories and `repository/.git/` for non-bare
 -- repositories. (Must end in a trailing path separator.)
 --
--- WARNING: This does not set up any bare repositories, you still have to do
--- that manually.
+-- WARNING: This does not set up any repositories for you, it only serves them
+-- you still have to take care of the repositories (and their configuration)
+-- behind the scenes.
 --
 cgiGitBackend ::
        FilePath -- ^ Git base dir
     -> Application
-cgiGitBackend baseDir req respond = do
+cgiGitBackend baseDir req respond =
     case parseMethod $ requestMethod req of
         Right GET -> cgiGitBackendApp baseDir False req respond
         Right POST -> cgiGitBackendApp baseDir True req respond
@@ -53,6 +51,9 @@ cgiGitBackend baseDir req respond = do
                 methodNotAllowed405
                 textPlainHeader
                 "Method Not Allowed\r\n"
+
+textPlainHeader :: ResponseHeaders
+textPlainHeader = [(hContentType, "text/plain")]
 
 cgiGitBackendApp :: FilePath -> Bool -> Application
 cgiGitBackendApp baseDir body req respond =
@@ -185,3 +186,16 @@ fromCGI rhdl = do
         (rsrc, hs) <- CB.sourceHandle rhdl $$+ parseHeader
         src <- toResponseSource rsrc
         return (src, hs)
+
+-- | Look-up key for Status.
+hStatus :: HeaderName
+hStatus = "status"
+
+hostPort :: Request -> (ByteString, ByteString)
+hostPort req =
+    case requestHeaderHost req of
+        Nothing -> ("Unknown", "80")
+        Just hostport ->
+            case SB8.break (== ':') hostport of
+                (host, "") -> (host, "80")
+                (host, port) -> (host, SB8.tail port)

@@ -1,6 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module GitSpec where
+module GitSpec
+    ( spec
+    ) where
 
 import Test.Hspec
 

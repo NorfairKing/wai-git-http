@@ -2,9 +2,7 @@ resolver: lts-9.20
 packages:
 - .
 extra-deps:
-- attoparsec-conduit-1.1.0
 - sockaddr-0.0.0
-- static-hash-0.0.1
 - genvalidity-0.4.0.0
 - genvalidity-bytestring-0.1.0.0
 - genvalidity-containers-0.3.0.0

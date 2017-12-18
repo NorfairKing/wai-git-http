@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Network.Wai.Application.Classic.Conduit
+module Network.Wai.Application.CGI.Git.Conduit
     ( byteStringToBuilder
     , toResponseSource
     , parseHeader
