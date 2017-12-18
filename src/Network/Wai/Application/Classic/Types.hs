@@ -8,80 +8,75 @@ import qualified Network.HTTP.Client as H
 import Network.Wai.Application.Classic.Path
 
 ----------------------------------------------------------------
-
-data ClassicAppSpec = ClassicAppSpec {
+data ClassicAppSpec = ClassicAppSpec
     -- | Name specified to Server: in HTTP response.
-    softwareName :: ByteString
+    { softwareName :: ByteString
     -- | A function to get HTTP's GMT Date.
-  , statusFileDir :: Path
-  }
+    , statusFileDir :: Path
+    }
 
-data StatusInfo =
+data StatusInfo
   -- | HTTP status body is created from 'LB.ByteString'.
-    StatusByteString BL.ByteString
+    = StatusByteString BL.ByteString
   -- | HTTP status body is created from 'FilePath'.
-  | StatusFile Path Integer
+    | StatusFile Path
+                 Integer
   -- | No HTTP status body.
-  | StatusNone
-  deriving (Eq,Show)
+    | StatusNone
+    deriving (Eq, Show)
 
 ----------------------------------------------------------------
-
-data FileAppSpec = FileAppSpec {
+data FileAppSpec = FileAppSpec
     -- | A file name of an index file.
-    indexFile :: Path
+    { indexFile :: Path
     -- | Whether this is an HTML or not.
-  , isHTML :: Path -> Bool
-  }
+    , isHTML :: Path -> Bool
+    }
 
-data FileRoute = FileRoute {
+data FileRoute = FileRoute
     -- | Path prefix to be matched to 'rawPathInfo'.
-    fileSrc :: Path
+    { fileSrc :: Path
     -- | Path prefix to an actual file system.
-  , fileDst :: Path
-  } deriving (Eq,Show)
+    , fileDst :: Path
+    } deriving (Eq, Show)
 
 ----------------------------------------------------------------
-
-data RedirectRoute = RedirectRoute {
+data RedirectRoute = RedirectRoute
     -- | Path prefix to be matched to 'rawPathInfo'.
-    redirectSrc :: Path
+    { redirectSrc :: Path
     -- | Path prefix to an actual file system.
-  , redirectDst :: Path
-  } deriving (Eq,Show)
+    , redirectDst :: Path
+    } deriving (Eq, Show)
 
 ----------------------------------------------------------------
-
-data CgiAppSpec = CgiAppSpec {
+data CgiAppSpec = CgiAppSpec
     -- | A file name of the default CGI.
-    indexCgi :: Path
-  } deriving (Eq,Show)
+    { indexCgi :: Path
+    } deriving (Eq, Show)
 
-data CgiRoute = CgiRoute {
+data CgiRoute = CgiRoute
     -- | Path prefix to be matched to 'rawPathInfo'.
-    cgiSrc :: Path
+    { cgiSrc :: Path
     -- | Path prefix to an actual file system.
-  , cgiDst :: Path
-  } deriving (Eq,Show)
+    , cgiDst :: Path
+    } deriving (Eq, Show)
 
 ----------------------------------------------------------------
-
-data RevProxyAppSpec = RevProxyAppSpec {
+data RevProxyAppSpec = RevProxyAppSpec
     -- | Connection manager
-    revProxyManager :: H.Manager
-  }
+    { revProxyManager :: H.Manager
+    }
 
-data RevProxyRoute = RevProxyRoute {
+data RevProxyRoute = RevProxyRoute
     -- | Path prefix to be matched to 'rawPathInfo'.
-    revProxySrc :: Path
+    { revProxySrc :: Path
     -- | Destination path prefix.
-  , revProxyDst :: Path
+    , revProxyDst :: Path
     -- | Destination domain name.
-  , revProxyDomain :: ByteString
+    , revProxyDomain :: ByteString
     -- | Destination port number.
-  , revProxyPort :: Int
-  } deriving (Eq,Show)
+    , revProxyPort :: Int
+    } deriving (Eq, Show)
 
 ----------------------------------------------------------------
-
 type Lang = Path -> Path

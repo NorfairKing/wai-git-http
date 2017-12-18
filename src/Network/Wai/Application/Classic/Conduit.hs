@@ -1,10 +1,10 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Network.Wai.Application.Classic.Conduit (
-    byteStringToBuilder
-  , toResponseSource
-  , parseHeader
-  ) where
+module Network.Wai.Application.Classic.Conduit
+    ( byteStringToBuilder
+    , toResponseSource
+    , parseHeader
+    ) where
 
 import Blaze.ByteString.Builder (Builder)
 import qualified Blaze.ByteString.Builder as BB (fromByteString)
@@ -19,20 +19,17 @@ import Data.Word
 import Network.HTTP.Types
 
 ----------------------------------------------------------------
-
 byteStringToBuilder :: ByteString -> Builder
 byteStringToBuilder = BB.fromByteString
 
 ----------------------------------------------------------------
-
-toResponseSource :: ResumableSource IO ByteString
-                 -> IO (Source IO (Flush Builder))
+toResponseSource ::
+       ResumableSource IO ByteString -> IO (Source IO (Flush Builder))
 toResponseSource rsrc = do
-    (src,_) <- unwrapResumable rsrc
+    (src, _) <- unwrapResumable rsrc
     return $ src $= CL.map (Chunk . byteStringToBuilder)
 
 ----------------------------------------------------------------
-
 parseHeader :: Sink ByteString IO RequestHeaders
 parseHeader = sinkParser parseHeader'
 
@@ -46,10 +43,10 @@ type RequestHeader = (CI ByteString, ByteString)
 
 keyVal :: Parser RequestHeader
 keyVal = do
-    key <- takeTill (wcollon==)
+    key <- takeTill (wcollon ==)
     _ <- word8 wcollon
     skipWhile (wspace ==)
-    val <- takeTill (`elem` [wlf,wcr])
+    val <- takeTill (`elem` [wlf, wcr])
     crlf
     return (mk key, val)
 

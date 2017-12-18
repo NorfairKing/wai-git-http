@@ -11,8 +11,8 @@ import Network.Wai.Application.Classic hiding ((</>))
 import Network.Wai.Handler.Warp
 import System.Directory
 import System.FilePath
-import Test.Hspec
 import System.Posix
+import Test.Hspec
 
 main :: IO ()
 main = do
@@ -30,16 +30,13 @@ testServer = do
 
 testApp :: FilePath -> Application
 testApp dir req
-    | cgi       = cgiApp  appSpec defaultCgiAppSpec  cgiRoute  req
+    | cgi = cgiApp appSpec defaultCgiAppSpec cgiRoute req
     | otherwise = fileApp appSpec defaultFileAppSpec fileRoute req
   where
     cgi = "/cgi-bin/" `BS.isPrefixOf` rawPathInfo req
-    appSpec = defaultClassicAppSpec { softwareName = "ClassicTester" }
-    cgiRoute = CgiRoute {
-        cgiSrc = "/cgi-bin/"
-      , cgiDst = fromString (dir </> "test/cgi-bin/")
-      }
-    fileRoute = FileRoute {
-        fileSrc = "/"
-      , fileDst = fromString (dir </> "test/html/")
-      }
+    appSpec = defaultClassicAppSpec {softwareName = "ClassicTester"}
+    cgiRoute =
+        CgiRoute
+        {cgiSrc = "/cgi-bin/", cgiDst = fromString (dir </> "test/cgi-bin/")}
+    fileRoute =
+        FileRoute {fileSrc = "/", fileDst = fromString (dir </> "test/html/")}

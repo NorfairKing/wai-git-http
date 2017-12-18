@@ -5,6 +5,7 @@ module Network.Wai.Application.Classic.CGI (
   , cgiGitBackend
   ) where
 
+
 import qualified Control.Exception as E (SomeException, IOException, try, catch, bracket)
 import Control.Monad (when, (<=<))
 import Data.ByteString (ByteString)

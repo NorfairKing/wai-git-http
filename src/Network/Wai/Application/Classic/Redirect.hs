@@ -1,8 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Network.Wai.Application.Classic.Redirect (
-    redirectApp
-  ) where
+module Network.Wai.Application.Classic.Redirect
+    ( redirectApp
+    ) where
 
 import Data.ByteString.Char8
 import Network.HTTP.Types
@@ -12,8 +12,7 @@ import Network.Wai.Application.Classic.Path
 import Network.Wai.Application.Classic.Types
 
 redirectApp :: ClassicAppSpec -> RedirectRoute -> Application
-redirectApp _ route req respond =
-    respond $ responseLBS status hdr ""
+redirectApp _ route req respond = respond $ responseLBS status hdr ""
   where
     path = rawPathInfo req
     src = redirectSrc route

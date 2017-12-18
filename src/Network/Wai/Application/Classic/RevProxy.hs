@@ -1,7 +1,9 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE CPP #-}
 
-module Network.Wai.Application.Classic.RevProxy (revProxyApp) where
+module Network.Wai.Application.Classic.RevProxy
+    ( revProxyApp
+    ) where
 
 import Blaze.ByteString.Builder (Builder)
 #if __GLASGOW_HASKELL__ < 709
@@ -24,50 +26,47 @@ import Network.Wai.Application.Classic.Types
 import Network.Wai.Conduit
 
 ----------------------------------------------------------------
-
 -- |  Relaying any requests as reverse proxy.
-
 revProxyApp :: ClassicAppSpec -> RevProxyAppSpec -> RevProxyRoute -> Application
-revProxyApp cspec spec route req respond = H.withResponse httpClientRequest mgr proxy
+revProxyApp cspec spec route req respond =
+    H.withResponse httpClientRequest mgr proxy
   where
     proxy hrsp = do
-        let status     = H.responseStatus hrsp
-            hdr        = fixHeader $ H.responseHeaders hrsp
+        let status = H.responseStatus hrsp
+            hdr = fixHeader $ H.responseHeaders hrsp
             clientBody = H.responseBody hrsp
-            ct         = lookup hContentType hdr
-            src        = toSource ct clientBody
+            ct = lookup hContentType hdr
+            src = toSource ct clientBody
         respond $ responseSource status hdr src
-
     httpClientRequest = reqToHReq req route
     mgr = revProxyManager spec
     fixHeader = addVia cspec req . filter headerToBeRelay
 
 headerToBeRelay :: Header -> Bool
-headerToBeRelay (k,_)
-      | k == hTransferEncoding = False
-      | k == hAcceptEncoding   = False
-      | k == hContentLength    = False
-      | k == hContentEncoding  = False -- See H.decompress.
-      | otherwise              = True
+headerToBeRelay (k, _)
+    | k == hTransferEncoding = False
+    | k == hAcceptEncoding = False
+    | k == hContentLength = False
+    | k == hContentEncoding = False -- See H.decompress.
+    | otherwise = True
 
 ----------------------------------------------------------------
-
 reqToHReq :: Request -> RevProxyRoute -> H.Request
-reqToHReq req route = H.defaultRequest {
-    H.host           = revProxyDomain route
-  , H.port           = revProxyPort route
-  , H.secure         = False -- FIXME: upstream is HTTP only
-  , H.requestHeaders = addForwardedFor req $ filter headerToBeRelay hdr
-  , H.path           = path'
-  , H.queryString    = dropQuestion query
-  , H.requestBody    = bodyToHBody len body
-  , H.method         = requestMethod req
-  , H.proxy          = Nothing
---  , H.rawBody        = False
-  , H.decompress     = const True
-  , H.checkResponse  = \_ _ -> return ()
-  , H.redirectCount  = 0
-  }
+reqToHReq req route =
+    H.defaultRequest
+    { H.host = revProxyDomain route
+    , H.port = revProxyPort route
+    , H.secure = False -- FIXME: upstream is HTTP only
+    , H.requestHeaders = addForwardedFor req $ filter headerToBeRelay hdr
+    , H.path = path'
+    , H.queryString = dropQuestion query
+    , H.requestBody = bodyToHBody len body
+    , H.method = requestMethod req
+    , H.proxy = Nothing
+    , H.decompress = const True
+    , H.checkResponse = \_ _ -> return ()
+    , H.redirectCount = 0
+    }
   where
     path = rawPathInfo req
     src = revProxySrc route
@@ -77,19 +76,21 @@ reqToHReq req route = H.defaultRequest {
     len = requestBodyLength req
     body = requestBody req
     path' = dst </> (path <\> src)
-    dropQuestion q = case BS.uncons q of
-        Just (63, q') -> q' -- '?' is 63
-        _             -> q
+    dropQuestion q =
+        case BS.uncons q of
+            Just (63, q') -> q' -- '?' is 63
+            _ -> q
 
+--  , H.rawBody        = False
 bodyToHBody :: RequestBodyLength -> IO ByteString -> H.RequestBody
-bodyToHBody ChunkedBody src       = H.RequestBodyStreamChunked ($ src)
-bodyToHBody (KnownLength len) src = H.RequestBodyStream (fromIntegral len) ($ src)
+bodyToHBody ChunkedBody src = H.RequestBodyStreamChunked ($ src)
+bodyToHBody (KnownLength len) src =
+    H.RequestBodyStream (fromIntegral len) ($ src)
 
 ----------------------------------------------------------------
-
 toSource :: Maybe ByteString -> H.BodyReader -> Source IO (Flush Builder)
 toSource (Just "text/event-stream") = bodyToEventSource
-toSource _                          = bodyToSource
+toSource _ = bodyToSource
 
 bodyToSource :: H.BodyReader -> Source IO (Flush Builder)
 bodyToSource br = loop
