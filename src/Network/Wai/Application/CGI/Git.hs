@@ -17,6 +17,7 @@ import Control.Exception (SomeException(..), bracket, catch)
 import Control.Monad
 
 import System.Environment (lookupEnv)
+import System.FilePath
 import System.IO
 import System.Process
 
@@ -31,13 +32,12 @@ import Network.Wai.Application.CGI.Git.Conduit
 -- | A git back-end
 --
 -- The git base dir is the directory for the git repository to serve.  This is
--- `repository/` for bare repositories and `repository/.git/` for non-bare
--- repositories. (Must end in a trailing path separator.)
+-- `repository` for bare repositories and `repository/.git` for non-bare
+-- repositories.
 --
 -- WARNING: This does not set up any repositories for you, it only serves them
 -- you still have to take care of the repositories (and their configuration)
 -- behind the scenes.
---
 cgiGitBackend ::
        FilePath -- ^ Git base dir
     -> Application
@@ -118,7 +118,7 @@ makeEnv ::
 makeEnv baseDir req naddr scriptName pathinfo sname epath =
     addPath epath . addLen . addType . addCookie $ baseEnv
   where
-    tp = baseDir ++ T.unpack (T.intercalate "/" $ pathInfo req)
+    tp = baseDir </> T.unpack (T.intercalate "/" $ pathInfo req)
     baseEnv =
         [ ("GATEWAY_INTERFACE", gatewayInterface)
         , ("SCRIPT_NAME", scriptName)

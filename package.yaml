@@ -31,6 +31,7 @@ library:
   - blaze-builder
   - case-insensitive
   - containers
+  - filepath
   - http-types >=0.7
   - network
   - sockaddr
