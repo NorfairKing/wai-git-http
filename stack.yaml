@@ -1,23 +1,5 @@
-resolver: lts-9.20
+resolver: lts-12.16
 packages:
 - .
 extra-deps:
 - sockaddr-0.0.0
-- genvalidity-0.4.0.0
-- genvalidity-bytestring-0.1.0.0
-- genvalidity-containers-0.3.0.0
-- genvalidity-hspec-0.5.0.0
-- genvalidity-hspec-aeson-0.1.0.0
-- genvalidity-path-0.2.0.0
-- genvalidity-property-0.1.0.0
-- genvalidity-text-0.4.0.0
-- genvalidity-time-0.1.0.0
-- genvalidity-uuid-0.0.0.0
-- validity-0.4.0.0
-- validity-bytestring-0.2.0.0
-- validity-containers-0.2.0.0
-- validity-path-0.2.0.0
-- validity-text-0.2.0.0
-- validity-time-0.1.0.0
-- validity-uuid-0.0.0.0
-- hlint-1.9.41

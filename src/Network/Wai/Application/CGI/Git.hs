@@ -26,8 +26,7 @@ import Network.SockAddr (showSockAddr)
 import Network.Wai
 import Network.Wai.Conduit
 
-import Network.Wai.Application.CGI.Git.Conduit
-       (parseHeader, toResponseSource)
+import Network.Wai.Application.CGI.Git.Conduit (parseHeader, toResponseSource)
 
 -- | A git back-end
 --
@@ -81,30 +80,31 @@ execGitBackendProcess baseDir req = do
   where
     proSpec naddr epath =
         CreateProcess
-        { cmdspec = RawCommand "/usr/bin/git" ["http-backend"]
-        , cwd = Nothing
-        , env =
-              Just $
-              makeEnv
-                  baseDir
-                  req
-                  naddr
-                  "git http-backend"
-                  (show $ rawPathInfo req)
-                  "git http-backend"
-                  epath
-        , std_in = CreatePipe
-        , std_out = CreatePipe
-        , std_err = Inherit
-        , close_fds = True
-        , create_group = True
-        , delegate_ctlc = False
-        , detach_console = False
-        , create_new_console = False
-        , new_session = False
-        , child_group = Nothing
-        , child_user = Nothing
-        }
+            { cmdspec = RawCommand "/usr/bin/git" ["http-backend"]
+            , cwd = Nothing
+            , env =
+                  Just $
+                  makeEnv
+                      baseDir
+                      req
+                      naddr
+                      "git http-backend"
+                      (show $ rawPathInfo req)
+                      "git http-backend"
+                      epath
+            , std_in = CreatePipe
+            , std_out = CreatePipe
+            , std_err = Inherit
+            , close_fds = True
+            , create_group = True
+            , delegate_ctlc = False
+            , detach_console = False
+            , create_new_console = False
+            , new_session = False
+            , child_group = Nothing
+            , child_user = Nothing
+            , use_process_jobs = True
+            }
 
 makeEnv ::
        FilePath
@@ -158,7 +158,7 @@ gatewayInterface :: String
 gatewayInterface = "CGI/1.1"
 
 toCGI :: Handle -> Request -> IO ()
-toCGI whdl req = sourceRequestBody req $$ CB.sinkHandle whdl
+toCGI whdl req = runConduit $ sourceRequestBody req .| CB.sinkHandle whdl
 
 fromCGI :: Handle -> IO Response
 fromCGI rhdl = do
