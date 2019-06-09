@@ -50,7 +50,7 @@ makeApp = do
     callIn dir "git init --bare"
     callIn dir "git config http.receivepack true"
     callIn dir "git config receive.denyCurrentBranch updateInstead"
-    pure $ cgiGitBackend dir
+    pure $ cgiGitBackend Nothing dir
 
 callIn :: FilePath -> String -> IO ()
 callIn dir cmd = do

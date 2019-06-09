@@ -8,6 +8,7 @@ module Network.Wai.Application.CGI.Git
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as SB8
 import qualified Data.Text as T
+import Data.Maybe
 
 import Data.Conduit
 import qualified Data.Conduit.Binary as CB
@@ -38,12 +39,13 @@ import Network.Wai.Application.CGI.Git.Conduit (parseHeader, toResponseSource)
 -- you still have to take care of the repositories (and their configuration)
 -- behind the scenes.
 cgiGitBackend ::
-       FilePath -- ^ Git base dir
+       Maybe FilePath -- ^ Git executable path
+    -> FilePath -- ^ Git base dir
     -> Application
-cgiGitBackend baseDir req respond =
+cgiGitBackend mge baseDir req respond =
     case parseMethod $ requestMethod req of
-        Right GET -> cgiGitBackendApp baseDir False req respond
-        Right POST -> cgiGitBackendApp baseDir True req respond
+        Right GET -> cgiGitBackendApp mge baseDir False req respond
+        Right POST -> cgiGitBackendApp mge baseDir True req respond
         _ ->
             respond $
             responseLBS
@@ -54,11 +56,11 @@ cgiGitBackend baseDir req respond =
 textPlainHeader :: ResponseHeaders
 textPlainHeader = [(hContentType, "text/plain")]
 
-cgiGitBackendApp :: FilePath -> Bool -> Application
-cgiGitBackendApp baseDir body req respond =
+cgiGitBackendApp :: Maybe FilePath -> FilePath -> Bool -> Application
+cgiGitBackendApp mge baseDir body req respond =
     bracket setup teardown (respond <=< cgi)
   where
-    setup = execGitBackendProcess baseDir req
+    setup = execGitBackendProcess mge baseDir req
     teardown (rhdl, whdl, pid) = do
         terminateProcess pid -- SIGTERM
         hClose rhdl
@@ -69,8 +71,8 @@ cgiGitBackendApp baseDir body req respond =
         fromCGI rhdl
 
 execGitBackendProcess ::
-       FilePath -> Request -> IO (Handle, Handle, ProcessHandle)
-execGitBackendProcess baseDir req = do
+       Maybe FilePath -> FilePath -> Request -> IO (Handle, Handle, ProcessHandle)
+execGitBackendProcess mge baseDir req = do
     let naddr = showSockAddr . remoteHost $ req
     epath <- lookupEnv "PATH"
     (Just whdl, Just rhdl, _, pid) <- createProcess $ proSpec naddr epath
@@ -80,7 +82,7 @@ execGitBackendProcess baseDir req = do
   where
     proSpec naddr epath =
         CreateProcess
-            { cmdspec = RawCommand "/usr/bin/git" ["http-backend"]
+            { cmdspec = RawCommand (fromMaybe "/usr/bin/git" mge) ["http-backend"]
             , cwd = Nothing
             , env =
                   Just $
